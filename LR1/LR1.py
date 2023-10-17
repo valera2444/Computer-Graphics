@@ -7,37 +7,45 @@ root.geometry('700x500')
 mode = ''
 busy = False
 def hls_to_rgb(hls):
-    # Convert HLS values to RGB
-    hue = hls[0] / 360
-    luminance = hls[1] / 100
-    saturation = hls[2] / 100
+    hue = hls[0]/360
+    luminance = hls[1]/100
+    saturation = hls[2]/100
 
-    if abs(saturation - 0) < 0.001:
-        # If saturation is 0, the color is grayscale, so R, G, and B are all set to luminance
-        return [int(luminance * 255), int(luminance * 255), int(luminance * 255)]
+    tmp1 = luminance * (1 + saturation)
+    if luminance >= 0.5:
+        tmp1 = luminance + saturation - luminance * saturation
 
-    def hueToRGB(p, q, t):
-        if t < 0:
-            t += 1
-        if t > 1:
-            t -= 1
-        if t < 1 / 6:
-            return p + (q - p) * 6 * t
-        if t < 1 / 2:
-            return q
-        if t < 2 / 3:
-            return p + (q - p) * (2 / 3 - t) * 6
-        return p
+    tmp2 = 2 * luminance - tmp1
 
-    q = luminance + saturation if luminance < 0.5 \
-        else luminance + saturation - luminance * saturation
-    p = 2 * luminance - q
+    
 
-    red = hueToRGB(p, q, hue + 1 / 3)
-    green = hueToRGB(p, q, hue)
-    blue = hueToRGB(p, q, hue - 1 / 3)
+    def normalizeTmpColor(tmpColor):
+        if tmpColor > 1:
+            tmpColor -= 1
+        elif tmpColor < 0:
+            tmpColor += 1
+        return tmpColor
 
-    return [int(red * 255), int(green * 255), int(blue * 255)]
+    def getColorRGB(tmpColor, tmp2, tmp1):
+        if 6 * tmpColor < 1:
+            return tmp2 + (tmp1 - tmp2) * 6 * tmpColor
+        elif 2 * tmpColor < 1:
+            return tmp1
+        elif 3 * tmpColor < 2:
+            return tmp2 + (tmp1 - tmp2) * (2 / 3 - tmpColor) * 6
+        else:
+            return tmp2
+
+    tmpR = normalizeTmpColor(hue + 1.0 / 3)
+    tmpG = normalizeTmpColor(hue)
+    tmpB = normalizeTmpColor(hue - 1.0 / 3)
+
+    red = getColorRGB(tmpR, tmp2, tmp1)
+    green = getColorRGB(tmpG, tmp2, tmp1)
+    blue = getColorRGB(tmpB, tmp2, tmp1)
+
+    
+    return [int(round(red*255)), int(round(green*255)), int(round(blue*255))]
 
 def rgb_to_hls(rgb):
     red = rgb[0] / 255.0
